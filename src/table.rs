@@ -212,7 +212,7 @@ impl Table {
             let shift = u32::try_from(elapsed_windows).unwrap_or(u32::MAX);
             for slot in &self.slots {
                 // Leave empty slots alone: no write, no cache line invalidation.
-                let _ = slot.fetch_update(Relaxed, Relaxed, |packed| {
+                let _ = slot.try_update(Relaxed, Relaxed, |packed| {
                     let (fingerprint, count) = unpack(packed);
                     (count != 0).then(|| pack(fingerprint, count.checked_shr(shift).unwrap_or(0)))
                 });
