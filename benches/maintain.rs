@@ -29,7 +29,7 @@ use std::hint::black_box;
 use std::time::{Duration, Instant};
 
 use rand::rngs::SmallRng;
-use rand::{Rng, SeedableRng};
+use rand::{RngExt, SeedableRng};
 use rand_distr::{Distribution, Zipf};
 
 use src::table::{MAX_WINDOW, TICKS_PER_WINDOW, Table};
