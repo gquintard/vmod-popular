@@ -13,8 +13,8 @@ xxhash-rust = { version = "0.8", features = ["xxh3"] }
 [dev-dependencies]
 # Reference implementations, used only to compare accuracy in tests.
 heavykeeper = "0.7"
-rand = "0.9"
-rand_distr = "0.5"
+rand = "0.10"
+rand_distr = "0.6"
 
 [lib]
 crate-type = ["cdylib"]
