@@ -1,0 +1,45 @@
+[package]
+name = "vmod_popular"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+fastrand = "2.5.0"
+varnish = "0.8.0"
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+
+[dev-dependencies]
+# Reference implementations, used only to compare accuracy in tests.
+heavykeeper = "0.7"
+rand = "0.9"
+rand_distr = "0.5"
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.test]
+opt-level = 3
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+cast_possible_wrap = "allow"
+cast_precision_loss = "allow"
+similar_names = "allow"
+
+[[bench]]
+name = "hit"
+harness = false
+
+[[bench]]
+name = "maintain"
+harness = false
+
+[[bench]]
+name = "accuracy"
+harness = false

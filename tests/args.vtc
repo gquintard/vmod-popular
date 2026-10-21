@@ -1,0 +1,58 @@
+varnishtest "constructor validation and odd inputs"
+
+server s1 {} -start
+
+varnish v1 -vcl+backend {
+    import popular from "${vmod}";
+
+    sub vcl_init {
+        new pool = popular.new(10);
+        # the default window (1000 * top) is capped, not rejected
+        new big = popular.new(2000000, size = 2000001);
+    }
+
+    sub vcl_recv {
+        return (synth(200));
+    }
+
+    sub vcl_synth {
+        set resp.http.unset = pool.is_popular(req.http.does-not-exist);
+        set resp.http.empty = pool.is_popular("");
+        set resp.http.url = pool.is_popular(req.url);
+    }
+} -start
+
+# vcl_init only runs on a live child, so start it before testing errors
+varnish v1 -errvcl "top must be positive" {
+    import popular from "${vmod}";
+    backend be none;
+    sub vcl_init { new pool = popular.new(0); }
+}
+
+varnish v1 -errvcl "must be larger than top" {
+    import popular from "${vmod}";
+    backend be none;
+    sub vcl_init { new pool = popular.new(10, size = 10); }
+}
+
+varnish v1 -errvcl "window (50) must be between size (100)" {
+    import popular from "${vmod}";
+    backend be none;
+    sub vcl_init { new pool = popular.new(10, size = 100, window = 50); }
+}
+
+varnish v1 -errvcl "size (1000000000) must be at most" {
+    import popular from "${vmod}";
+    backend be none;
+    sub vcl_init { new pool = popular.new(10, size = 1000000000); }
+}
+
+client c1 {
+    txreq -url "/%ff%fe\xff\xfe"
+    rxresp
+    expect resp.status == 200
+    expect resp.http.url == "false"
+    expect resp.http.unset == "false"
+    # an unset header is the empty string, so "" was counted twice
+    expect resp.http.empty == "true"
+} -run

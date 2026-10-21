@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+  RUST_BACKTRACE: 1
+
+jobs:
+  test:
+    name: Test Varnish ${{ matrix.ver }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ver: [ "9.0", "9.1" ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Varnish ${{ matrix.ver }}
+        run: |
+          set -x
+          curl -Ls https://packages.varnish-software.com/varnish/bootstrap-deb.sh | sudo sh
+          printf '%s\n' \
+            'Package: varnish varnish-dev' \
+            'Pin: origin "packages.varnish-software.com"' \
+            'Pin: version ${{ matrix.ver }}*' \
+            'Pin-Priority: 1001' | sudo tee /etc/apt/preferences.d/varnish
+          sudo apt-get install -y "varnish=${{ matrix.ver }}*" "varnish-dev=${{ matrix.ver }}*"
+          varnishd -V
+
+      - uses: dtolnay/rust-toolchain@stable
+        with: { components: "clippy, rustfmt" }
+      - uses: Swatinem/rust-cache@v2
+        with: { key: "${{ matrix.ver }}" }
+
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets
+      # vtc tests load target/debug/libvmod_popular.so, which `cargo test` does not rebuild.
+      - run: cargo build
+      - run: cargo test
+      - run: cargo bench --no-run
+      - name: Check API.md is up to date
+        run: git diff --exit-code API.md
+
+  # Single required check for branch protection.
+  ci-passed:
+    needs: [ test ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: exit 1

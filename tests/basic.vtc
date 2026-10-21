@@ -1,0 +1,71 @@
+varnishtest "is_popular, count, threshold"
+
+server s1 {} -start
+
+varnish v1 -vcl+backend {
+    import popular from "${vmod}";
+
+    sub vcl_init {
+        new pool = popular.new(1, size = 4096, window = 1000000);
+    }
+
+    sub vcl_recv {
+        if (req.url == "/maintain") {
+            pool.maintain();
+        }
+        return (synth(200));
+    }
+
+    sub vcl_synth {
+        set resp.http.popular = pool.is_popular(req.url);
+        set resp.http.count = pool.count(req.url);
+        set resp.http.threshold = pool.threshold();
+    }
+} -start
+
+client c1 {
+    # cold start: one hit is never popular
+    txreq -url /b
+    rxresp
+    expect resp.http.popular == "false"
+    expect resp.http.count == 1
+
+    txreq -url /a
+    rxresp
+    expect resp.http.popular == "false"
+    txreq -url /a
+    rxresp
+    expect resp.http.popular == "true"
+    txreq -url /a
+    rxresp
+    expect resp.http.count == 3
+
+    txreq -url /b
+    rxresp
+    expect resp.http.count == 2
+
+    # threshold becomes the 2nd largest count (/b: 2, /a: 3, /maintain: 1)
+    txreq -url /maintain
+    rxresp
+    expect resp.http.threshold == 2
+
+    txreq -url /a
+    rxresp
+    expect resp.http.popular == "true"
+    txreq -url /b
+    rxresp
+    expect resp.http.popular == "true"
+    expect resp.http.count == 3
+
+    # /a: 4, /b: 3, /maintain: 2 -> threshold 3
+    txreq -url /maintain
+    rxresp
+    expect resp.http.threshold == 3
+    txreq -url /b
+    rxresp
+    expect resp.http.count == 4
+    expect resp.http.popular == "true"
+    txreq -url /c
+    rxresp
+    expect resp.http.popular == "false"
+} -run
