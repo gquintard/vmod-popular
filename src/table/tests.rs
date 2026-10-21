@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use heavykeeper::{CuckooTopK, TopK};
 use rand::rngs::SmallRng;
-use rand::{Rng, SeedableRng};
+use rand::{RngExt, SeedableRng};
 use rand_distr::{Distribution, Zipf};
 
 use super::*;

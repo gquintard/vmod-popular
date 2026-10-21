@@ -30,7 +30,7 @@ mod src {
 use std::collections::HashSet;
 
 use rand::rngs::SmallRng;
-use rand::{Rng, SeedableRng};
+use rand::{RngExt, SeedableRng};
 use rand_distr::{Distribution, Zipf};
 
 use src::table::{MAX_WINDOW, Table};
