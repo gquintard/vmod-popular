@@ -229,9 +229,9 @@ checksum = "e4eba85ea1d0a966a983acd07deee566e67395d2d96b6fb39e62b5a833f1eb0b"
 
 [[package]]
 name = "heavykeeper"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7d8773ce620c88688cb9fd58bdb545a27fc7d380bc827d942580eb557438f23"
+checksum = "b30993c5269d71fdb5115f2c6ff07da9ce77f0c26864f3e33bcae70a509ce9e1"
 dependencies = [
  "ahash",
  "fastrand",
